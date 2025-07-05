@@ -8,8 +8,9 @@ const ejsMate = require("ejs-mate");
 const wrapAsync = require("./utils/wrapAsync.js");
 const ExpressError = require("./utils/ExpressError.js");
 const { listingSchema } = require("./schema.js");
+require("dotenv").config();
 
-const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
+const MONGO_URL = process.env.MONGODB_URI;
 
 main()
   .then(() => {
@@ -35,7 +36,7 @@ app.get("/", (req, res) => {
 const validateListing = (req, res, next) => {
   let { error } = listingSchema.validate(req.body);
   if (error) {
-    let errMsg = error.details.map((ele)=>ele.message).join(",")
+    let errMsg = error.details.map((ele) => ele.message).join(",");
     throw new ExpressError(400, errMsg);
   } else {
     next();
@@ -47,7 +48,6 @@ app.get(
   "/listings",
   wrapAsync(async (req, res) => {
     const allListings = await Listing.find({});
-
     res.render("./listings/index.ejs", { allListings });
   })
 );
@@ -103,6 +103,14 @@ app.put(
 app.delete(
   "/listings/:id",
   wrapAsync(async (req, res) => {
+    if (process.env.ADMIN_MODE !== "true") {
+      return res.status(403).render("error.ejs", {
+        err: {
+          statusCode: 403,
+          message: "Access Denied: Deletion not allowed",
+        },
+      });
+    }
     let { id } = req.params;
     let deletedListing = await Listing.findByIdAndDelete(id);
     console.log(deletedListing);
@@ -110,33 +118,16 @@ app.delete(
   })
 );
 
-// ==================================
-
-// app.get("/testListing",async (req, res) => {
-//   let sampleListing = new Listing({
-//     title: "My New Villa",
-//     description: "By the beach",
-//     price: 1200,
-//     location: "Bhilai, CG",
-//     country: "India",
-//   });
-
-//   await sampleListing.save();
-//   console.log("Sample was saved ");
-//   res.send("Succesfull Test");
-// });
-
 app.all("/{*any}", (req, res, next) => {
   next(new ExpressError(404, "Page Not Found!!"));
 });
 
 app.use((err, req, res, next) => {
-  // let { statusCode = 500, message = "Something went wrong!!" } = err;
   let { statusCode = 500, message = "Something went wrong!!" } = err;
   res.status(statusCode).render("error.ejs", { err });
-  // res.status(statusCode).send(message);
 });
 
-app.listen(8080, () => {
-  console.log("Server is listening on port 8080");
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`Server is listening on port ${PORT}`);
 });
