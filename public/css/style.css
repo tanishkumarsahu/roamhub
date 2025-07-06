@@ -325,6 +325,10 @@ body {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
 }
 
+.card-image{
+  margin-top: 0.6rem;
+}
+
 .card-img-top {
   border-radius: 1rem !important;
   width: 100% !important;
